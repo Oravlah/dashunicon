@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "https://app.tensor.cl/apiuser"  
+BASE_URL = "http://app.tensor.cl/apiuser"  
 
 def api_login(email, password):
     url = f"{BASE_URL}/auth/login"
