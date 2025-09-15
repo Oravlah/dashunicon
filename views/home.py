@@ -175,13 +175,15 @@ layout = html.Div([
                             "layout": {
                                 "title": "",
                                 "height": 425,
+                                "autosize": False,  # ⬅️ fija la altura
                                 "margin": {"l": 40, "r": 20, "t": 25, "b": 40},
                                 "plot_bgcolor": colors["background"],
                                 "paper_bgcolor": colors["background"],
                                 "font": {"color": colors["text"]},
                             }
                         },
-                        style={"marginTop": "15px", "marginLeft": "5px"},
+                        config={"responsive": False},  # ⬅️ evita crecer por responsivo
+                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # ⬅️ reserva en CSS
                     ),
                     dcc.Interval(id="interval-grafico_1_home2", interval=interval, n_intervals=0),
                 ])
@@ -199,18 +201,20 @@ layout = html.Div([
                             "layout": {
                                 "title": "",
                                 "height": 425,
+                                "autosize": False,  # ⬅️ fija la altura
                                 "margin": {"l": 40, "r": 20, "t": 25, "b": 40},
                                 "plot_bgcolor": colors["background"],
                                 "paper_bgcolor": colors["background"],
                                 "font": {"color": colors["text"]},
                             }
                         },
-                        style={"marginTop": "15px", "marginLeft": "5px"},
+                        config={"responsive": False},  # ⬅️ evita crecer por responsivo
+                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # ⬅️ reserva en CSS
                     ),
                     dcc.Interval(id="interval-grafico_2_home2", interval=interval, n_intervals=0),
                 ])
             ]),
             dcc.Interval(id="interval-op_home2", interval=interval, n_intervals=0),
-        ], width=9),
+        ], width=9, style={"maxHeight": "calc(100vh - 40px)", "overflowY": "auto"}),  # ⬅️ opcional anti-desborde
     ])
 ], style={"backgroundColor": colors["background"], "minHeight": "100vh", "paddingBottom": "20px"})
