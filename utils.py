@@ -1,9 +1,9 @@
 import requests
 
-BASE_URL = "http://app.tensor.cl/apiuser"  
+BASE_URL = "https://app.tensor.cl/p8080"  
 
 def api_login(email, password):
-    url = f"{BASE_URL}/auth/login"
+    url = f"{BASE_URL}/apiuser/auth/login"
     data = {"email": email, "password": password}
     try:
         response = requests.post(url, data=data)
@@ -19,7 +19,7 @@ def api_login(email, password):
 
 
 def api_get_user(access_token):
-    url = f"{BASE_URL}/auth/user"
+    url = f"{BASE_URL}/apiuser/auth/user"
     headers = {"Authorization": f"Bearer {access_token}"}
     try:
         response = requests.get(url, headers=headers)
