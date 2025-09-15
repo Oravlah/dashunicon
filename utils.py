@@ -1,14 +1,14 @@
 import requests
 
-BASE_URL = "https://app.tensor.cl/p8080/apiuser"  
+BASE_URL = "http://app.tensor.cl/p8080/apiuser"  
 
 def api_login(email, password):
     url = f"{BASE_URL}/auth/login"
     data = {"email": email, "password": password}
     try:
         response = requests.post(url, data=data)
-        print("Status code API:", response.status_code, flush=True)  # <--- print
-        print("Respuesta API:", response.text, flush=True)           # <--- print
+        print("Status code API:", response.status_code, flush=True)  
+        print("Respuesta API:", response.text, flush=True)          
         if response.status_code == 200:
             return response.json()
         else:
@@ -19,7 +19,6 @@ def api_login(email, password):
 
 
 def api_get_user(access_token):
-    """Hace GET a /auth/user para obtener info del usuario"""
     url = f"{BASE_URL}/auth/user"
     headers = {"Authorization": f"Bearer {access_token}"}
     try:
