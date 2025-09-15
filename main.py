@@ -17,7 +17,7 @@ app = dash.Dash(
 
 server = app.server
 
-port_web = os.environ.get('PUERTO_WEB')
+port_web = int(os.environ.get('PUERTO_WEB', '8596'))
 
 store_token = dcc.Store(id='token-store', storage_type='session')
 
