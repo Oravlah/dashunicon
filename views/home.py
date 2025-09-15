@@ -1,5 +1,15 @@
+# views/home.py
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output
+
+# === extras para traer datos y armar figuras ===
+import requests
+import plotly.graph_objects as go
+from datetime import datetime, timezone
+
+# ================== CONFIG ==================
+GRAFICO_URL = "http://10.6.0.21:9090/grafico/"  # endpoint que retorna la lista de objetos
 
 # ====== parámetros ======
 nombre_lineas = ["11", "7"]  # ejemplo
@@ -58,7 +68,7 @@ card_frame_style = {
     "marginLeft": "10px",
 }
 
-# ====== helper ======
+# ====== helpers de UI ======
 def make_line_card(line_name: str,
                    rend_teo_id: str,
                    ege_id: str,
@@ -129,7 +139,6 @@ def make_line_card(line_name: str,
         style=card_frame_style,
     )
 
-
 # ====== layout ======
 layout = html.Div([
     html.Meta(httpEquiv="refresh", content="300"),
@@ -175,15 +184,15 @@ layout = html.Div([
                             "layout": {
                                 "title": "",
                                 "height": 425,
-                                "autosize": False,  # ⬅️ fija la altura
+                                "autosize": False,  # fija la altura
                                 "margin": {"l": 40, "r": 20, "t": 25, "b": 40},
                                 "plot_bgcolor": colors["background"],
                                 "paper_bgcolor": colors["background"],
                                 "font": {"color": colors["text"]},
                             }
                         },
-                        config={"responsive": False},  # ⬅️ evita crecer por responsivo
-                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # ⬅️ reserva en CSS
+                        config={"responsive": False},  # evita crecer por responsivo
+                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # reserva en CSS
                     ),
                     dcc.Interval(id="interval-grafico_1_home2", interval=interval, n_intervals=0),
                 ])
@@ -201,20 +210,110 @@ layout = html.Div([
                             "layout": {
                                 "title": "",
                                 "height": 425,
-                                "autosize": False,  # ⬅️ fija la altura
+                                "autosize": False,
                                 "margin": {"l": 40, "r": 20, "t": 25, "b": 40},
                                 "plot_bgcolor": colors["background"],
                                 "paper_bgcolor": colors["background"],
                                 "font": {"color": colors["text"]},
                             }
                         },
-                        config={"responsive": False},  # ⬅️ evita crecer por responsivo
-                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # ⬅️ reserva en CSS
+                        config={"responsive": False},
+                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},
                     ),
                     dcc.Interval(id="interval-grafico_2_home2", interval=interval, n_intervals=0),
                 ])
             ]),
             dcc.Interval(id="interval-op_home2", interval=interval, n_intervals=0),
-        ], width=9, style={"maxHeight": "calc(100vh - 40px)", "overflowY": "auto"}),  # ⬅️ opcional anti-desborde
+        ], width=9, style={"maxHeight": "calc(100vh - 40px)", "overflowY": "auto"}),  # anti-desborde
     ])
 ], style={"backgroundColor": colors["background"], "minHeight": "100vh", "paddingBottom": "20px"})
+
+
+# =============== LÓGICA: traer datos y armar figuras ===============
+def _fetch_grafico_data(timeout=6):
+    """
+    GET al endpoint. Espera lista de dicts con:
+      {"fecha": <epoch_ms>, "ch0": float, "ch1": float, "ch2": float, "ch3": float}
+    """
+    r = requests.get(GRAFICO_URL, timeout=timeout)
+    r.raise_for_status()
+    data = r.json()
+    if not isinstance(data, list):
+        raise ValueError("El endpoint no retornó una lista.")
+    return data
+
+def _to_dt(ms):
+    # epoch milisegundos → datetime UTC
+    return datetime.fromtimestamp(ms/1000.0, tz=timezone.utc)
+
+def _figure_from_series(x, series_dict, title="Lecturas por canal"):
+    fig = go.Figure()
+    # series_dict: {"ch0": list, "ch1": list, ...}
+    for name, y in series_dict.items():
+        if y is None:
+            continue
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines+markers", name=name))
+
+    fig.update_layout(
+        title=title,
+        height=425,
+        autosize=False,
+        margin=dict(l=40, r=20, t=30, b=40),
+        plot_bgcolor=colors["background"],
+        paper_bgcolor=colors["background"],
+        font=dict(color=colors["text"]),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis=dict(title="Tiempo"),
+        yaxis=dict(title="Valor"),
+    )
+    return fig
+
+def _error_figure(msg):
+    fig = go.Figure()
+    fig.add_annotation(text=f"Error cargando datos<br><sup>{msg}</sup>",
+                       x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)
+    fig.update_layout(
+        height=425, autosize=False,
+        plot_bgcolor=colors["background"], paper_bgcolor=colors["background"],
+        font=dict(color=colors["text"]),
+        margin=dict(l=40, r=20, t=30, b=40),
+    )
+    return fig
+
+
+# =============== REGISTRO DE CALLBACKS (llamar desde main.py) ===============
+def register_callbacks(app):
+    @app.callback(
+        Output("grafico_1_home2", "figure"),
+        Input("interval-grafico_1_home2", "n_intervals"),
+    )
+    def _update_grafico_1(_n):
+        try:
+            raw = _fetch_grafico_data()
+            # Ordenar por fecha
+            raw = sorted(raw, key=lambda d: d.get("fecha", 0))
+            x = [_to_dt(d["fecha"]) for d in raw if "fecha" in d]
+            ch0 = [d.get("ch0") for d in raw]
+            ch1 = [d.get("ch1") for d in raw]
+            ch2 = [d.get("ch2") for d in raw]
+            ch3 = [d.get("ch3") for d in raw]
+            return _figure_from_series(x, {"ch0": ch0, "ch1": ch1, "ch2": ch2, "ch3": ch3},
+                                       title="Lecturas por canal")
+        except Exception as e:
+            return _error_figure(str(e))
+
+    @app.callback(
+        Output("grafico_2_home2", "figure"),
+        Input("interval-grafico_2_home2", "n_intervals"),
+    )
+    def _update_grafico_2(_n):
+        # Ejemplo: solo ch0 y ch1 (puedes cambiarlo)
+        try:
+            raw = _fetch_grafico_data()
+            raw = sorted(raw, key=lambda d: d.get("fecha", 0))
+            x = [_to_dt(d["fecha"]) for d in raw if "fecha" in d]
+            ch0 = [d.get("ch0") for d in raw]
+            ch1 = [d.get("ch1") for d in raw]
+            return _figure_from_series(x, {"ch0": ch0, "ch1": ch1}, title="ch0 vs ch1")
+        except Exception as e:
+            return _error_figure(str(e))

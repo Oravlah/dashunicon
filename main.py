@@ -7,6 +7,7 @@ from views import login, home
 
 PREFIX = "/dashunicon/"
 
+
 app = dash.Dash(
     __name__,
     suppress_callback_exceptions=True,
@@ -31,6 +32,7 @@ app.layout = html.Div([
 
 # Registrar callbacks de login
 login.register_callbacks(app)
+home.register_callbacks(app)
 
 def _normalize_path(pathname: str) -> str:
     if not pathname:
