@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://app.tensor.cl/p8080/apiuser"  
+BASE_URL = "https://app.tensor.cl/apiuser"  
 
 def api_login(email, password):
     url = f"{BASE_URL}/auth/login"
@@ -8,7 +8,7 @@ def api_login(email, password):
     try:
         response = requests.post(url, data=data)
         print("Status code API:", response.status_code, flush=True)  
-        print("Respuesta API:", response.text, flush=True)          
+        print("Respuesta API:", response.text, flush=True)           
         if response.status_code == 200:
             return response.json()
         else:
