@@ -1,5 +1,6 @@
 import os
 import dash
+import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash.dependencies import Input, Output
 from views import login, home
@@ -13,6 +14,7 @@ app = dash.Dash(
     routes_pathname_prefix=PREFIX,
     assets_url_path=f"{PREFIX}assets",
     serve_locally=True,
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
 
 server = app.server
