@@ -23,7 +23,6 @@ def register_callbacks(app):
     def login_callback(n_clicks, email, password):
         print(f"Callback login disparado - n_clicks: {n_clicks}, email: {email}, password: {password}", flush=True)
         if not n_clicks:
-            # Mantente en la raíz de la app (con prefijo)
             return "", None, app.get_relative_path("/")
 
         if not email or not password:
@@ -34,7 +33,6 @@ def register_callbacks(app):
 
         if result and "access" in result:
             token = result["access"]
-            # Redirige a /dashunicon/home (prefijo se agrega solo)
             return "", token, app.get_relative_path("/home")
         else:
             return "Usuario o contraseña incorrectos", None, app.get_relative_path("/")

@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://app.tensor.cl/p8080/apiuser"  # Cambia TU_DOMINIO por tu dominio real
+BASE_URL = "https://app.tensor.cl/p8080/apiuser"  
 
 def api_login(email, password):
     url = f"{BASE_URL}/auth/login"
