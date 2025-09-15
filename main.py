@@ -17,8 +17,7 @@ app = dash.Dash(
 
 server = app.server
 
-port_web = int(os.environ.get('PUERTO_WEB'))  
-
+port_web = os.environ.get('PUERTO_WEB')
 store_token = dcc.Store(id='token-store', storage_type='session')
 
 app.layout = html.Div([
@@ -27,17 +26,16 @@ app.layout = html.Div([
     html.Div(id='page-content')
 ])
 
-# Registrar callbacks de login
+
 login.register_callbacks(app)
 
 def _normalize_path(pathname: str) -> str:
-
     if not pathname:
         return "/"
     if pathname.startswith(PREFIX):
         rest = pathname[len(PREFIX):]  
         return "/" + rest.lstrip("/")  
-    return pathname 
+    return pathname  
 
 @app.callback(
     Output('page-content', 'children'),
