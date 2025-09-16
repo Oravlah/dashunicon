@@ -4,12 +4,29 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output
 
 # === extras para traer datos y armar figuras ===
+import os
 import requests
 import plotly.graph_objects as go
 from datetime import datetime, timezone
+from requests.adapters import HTTPAdapter, Retry
 
 # ================== CONFIG ==================
-GRAFICO_URL = "http://10.6.0.21:9090/grafico/"  # endpoint que retorna la lista de objetos
+GRAFICO_URL = os.getenv("GRAFICO_URL", "http://10.6.0.21:9090/grafico/")  # endpoint datos
+
+# Nombres legibles de canales (personaliza aquí)
+CANAL_NOMBRES = {
+    "ch0": "Canal 0",
+    "ch1": "Canal 1",
+    "ch2": "Canal 2",
+    "ch3": "Canal 3",
+}
+
+# Reutiliza sesión HTTP con reintentos
+_session = requests.Session()
+_retries = Retry(total=3, backoff_factor=0.3, status_forcelist=(429, 500, 502, 503, 504))
+_session.mount("http://", HTTPAdapter(max_retries=_retries))
+
+DEFAULT_TIMEOUT = 6
 
 # ====== parámetros ======
 nombre_lineas = ["11", "7"]  # ejemplo
@@ -71,13 +88,15 @@ card_frame_style = {
 # ====== helpers de UI ======
 def make_line_card(line_name: str,
                    rend_teo_id: str,
-                   ege_id: str,
-                   disp_id: str,
-                   desem_id: str,
-                   tdeten_id: str):
+                   ege_id: str, disp_id: str, desem_id: str, tdeten_id: str,
+                   lbl_ege_id: str, lbl_disp_id: str, lbl_desem_id: str, lbl_tdeten_id: str):
+    """
+    Card de la izquierda. Los H6 llevan ids (lbl_*) para poder cambiarles el nombre
+    según el canal (ch0..ch3). Los inputs muestran el último valor de cada canal.
+    """
     return dbc.Card(
         dbc.CardBody([
-            # Título
+            # Título principal
             dbc.Row([
                 dbc.Col([
                     dcc.Input(
@@ -101,39 +120,31 @@ def make_line_card(line_name: str,
                 ])
             ]),
 
-            # Valor Rend. Teórico
+            # Valor Rend. Teórico (si lo usas por callback, queda aquí)
             dbc.Row([dbc.Col([html.Div(id=rend_teo_id)])]),
 
-            # EGE
+            # Métrica 1
             dbc.Row([
-                dbc.Col([html.H6("EGE", style={"marginTop": "30px", "color": "white"})]),
-                dbc.Col([
-                    dcc.Input(value="0000", type="text", id=ege_id, disabled=True, style=style_metric_input)
-                ]),
+                dbc.Col([html.H6(id=lbl_ege_id, children="—", style={"marginTop": "30px", "color": "white"})]),
+                dbc.Col([dcc.Input(value="0000", type="text", id=ege_id, disabled=True, style=style_metric_input)]),
             ]),
 
-            # Disponibilidad
+            # Métrica 2
             dbc.Row([
-                dbc.Col([html.H6("Disponibilidad", style={"marginTop": "30px", "color": "white"})]),
-                dbc.Col([
-                    dcc.Input(value="0000", type="text", id=disp_id, disabled=True, style=style_metric_input)
-                ]),
+                dbc.Col([html.H6(id=lbl_disp_id, children="—", style={"marginTop": "30px", "color": "white"})]),
+                dbc.Col([dcc.Input(value="0000", type="text", id=disp_id, disabled=True, style=style_metric_input)]),
             ]),
 
-            # Desempeño
+            # Métrica 3
             dbc.Row([
-                dbc.Col([html.H6("Desempeño", style={"marginTop": "30px", "color": "white"})]),
-                dbc.Col([
-                    dcc.Input(value="0000", type="text", id=desem_id, disabled=True, style=style_metric_input)
-                ]),
+                dbc.Col([html.H6(id=lbl_desem_id, children="—", style={"marginTop": "30px", "color": "white"})]),
+                dbc.Col([dcc.Input(value="0000", type="text", id=desem_id, disabled=True, style=style_metric_input)]),
             ]),
 
-            # Tiempo de detención
+            # Métrica 4
             dbc.Row([
-                dbc.Col([html.H6("T.Detención", style={"marginTop": "30px", "color": "white"})]),
-                dbc.Col([
-                    dcc.Input(value="---", type="text", id=tdeten_id, disabled=True, style=style_metric_input)
-                ]),
+                dbc.Col([html.H6(id=lbl_tdeten_id, children="—", style={"marginTop": "30px", "color": "white"})]),
+                dbc.Col([dcc.Input(value="---", type="text", id=tdeten_id, disabled=True, style=style_metric_input)]),
             ]),
         ]),
         style=card_frame_style,
@@ -150,20 +161,16 @@ layout = html.Div([
                 make_line_card(
                     line_name=nombre_lineas[0],
                     rend_teo_id="rend_teo1_home2",
-                    ege_id="dato1_home2",
-                    disp_id="dato2_home2",
-                    desem_id="dato3_home2",
-                    tdeten_id="t_deten_1_home2",
+                    ege_id="dato1_home2", disp_id="dato2_home2", desem_id="dato3_home2", tdeten_id="t_deten_1_home2",
+                    lbl_ege_id="lbl_ch0_l1", lbl_disp_id="lbl_ch1_l1", lbl_desem_id="lbl_ch2_l1", lbl_tdeten_id="lbl_ch3_l1",
                 )
             ]),
             dbc.Row([
                 make_line_card(
                     line_name=nombre_lineas[1],
                     rend_teo_id="rend_teo2_home2",
-                    ege_id="ege_ad_home2",
-                    disp_id="disp_ad_home2",
-                    desem_id="desem_ad_home2",
-                    tdeten_id="t_deten_2_home2",
+                    ege_id="ege_ad_home2", disp_id="disp_ad_home2", desem_id="desem_ad_home2", tdeten_id="t_deten_2_home2",
+                    lbl_ege_id="lbl_ch0_l2", lbl_disp_id="lbl_ch1_l2", lbl_desem_id="lbl_ch2_l2", lbl_tdeten_id="lbl_ch3_l2",
                 )
             ]),
             dcc.Interval(id="interval-ultimos-datos_home2", interval=interval, n_intervals=0),
@@ -184,15 +191,15 @@ layout = html.Div([
                             "layout": {
                                 "title": "",
                                 "height": 425,
-                                "autosize": False,  # fija la altura
+                                "autosize": False,
                                 "margin": {"l": 40, "r": 20, "t": 25, "b": 40},
                                 "plot_bgcolor": colors["background"],
                                 "paper_bgcolor": colors["background"],
                                 "font": {"color": colors["text"]},
                             }
                         },
-                        config={"responsive": False},  # evita crecer por responsivo
-                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},  # reserva en CSS
+                        config={"responsive": False},
+                        style={"marginTop": "15px", "marginLeft": "5px", "height": "425px"},
                     ),
                     dcc.Interval(id="interval-grafico_1_home2", interval=interval, n_intervals=0),
                 ])
@@ -224,18 +231,18 @@ layout = html.Div([
                 ])
             ]),
             dcc.Interval(id="interval-op_home2", interval=interval, n_intervals=0),
-        ], width=9, style={"maxHeight": "calc(100vh - 40px)", "overflowY": "auto"}),  # anti-desborde
+        ], width=9, style={"maxHeight": "calc(100vh - 40px)", "overflowY": "auto"}),
     ])
 ], style={"backgroundColor": colors["background"], "minHeight": "100vh", "paddingBottom": "20px"})
 
 
 # =============== LÓGICA: traer datos y armar figuras ===============
-def _fetch_grafico_data(timeout=6):
+def _fetch_grafico_data(timeout=DEFAULT_TIMEOUT):
     """
     GET al endpoint. Espera lista de dicts con:
       {"fecha": <epoch_ms>, "ch0": float, "ch1": float, "ch2": float, "ch3": float}
     """
-    r = requests.get(GRAFICO_URL, timeout=timeout)
+    r = _session.get(GRAFICO_URL, timeout=timeout)
     r.raise_for_status()
     data = r.json()
     if not isinstance(data, list):
@@ -248,12 +255,10 @@ def _to_dt(ms):
 
 def _figure_from_series(x, series_dict, title="Lecturas por canal"):
     fig = go.Figure()
-    # series_dict: {"ch0": list, "ch1": list, ...}
     for name, y in series_dict.items():
         if y is None:
             continue
         fig.add_trace(go.Scatter(x=x, y=y, mode="lines+markers", name=name))
-
     fig.update_layout(
         title=title,
         height=425,
@@ -283,6 +288,7 @@ def _error_figure(msg):
 
 # =============== REGISTRO DE CALLBACKS (llamar desde main.py) ===============
 def register_callbacks(app):
+    # ----- Gráfico 1 (todas las series) -----
     @app.callback(
         Output("grafico_1_home2", "figure"),
         Input("interval-grafico_1_home2", "n_intervals"),
@@ -290,7 +296,6 @@ def register_callbacks(app):
     def _update_grafico_1(_n):
         try:
             raw = _fetch_grafico_data()
-            # Ordenar por fecha
             raw = sorted(raw, key=lambda d: d.get("fecha", 0))
             x = [_to_dt(d["fecha"]) for d in raw if "fecha" in d]
             ch0 = [d.get("ch0") for d in raw]
@@ -302,12 +307,12 @@ def register_callbacks(app):
         except Exception as e:
             return _error_figure(str(e))
 
+    # ----- Gráfico 2 (ejemplo ch0 y ch1) -----
     @app.callback(
         Output("grafico_2_home2", "figure"),
         Input("interval-grafico_2_home2", "n_intervals"),
     )
     def _update_grafico_2(_n):
-        # Ejemplo: solo ch0 y ch1 (puedes cambiarlo)
         try:
             raw = _fetch_grafico_data()
             raw = sorted(raw, key=lambda d: d.get("fecha", 0))
@@ -317,3 +322,73 @@ def register_callbacks(app):
             return _figure_from_series(x, {"ch0": ch0, "ch1": ch1}, title="ch0 vs ch1")
         except Exception as e:
             return _error_figure(str(e))
+
+    # ----- Tarjetas izquierdas: nombres de canales + último valor -----
+    @app.callback(
+        # Valores tarjeta 1
+        Output("dato1_home2", "value"),
+        Output("dato2_home2", "value"),
+        Output("dato3_home2", "value"),
+        Output("t_deten_1_home2", "value"),
+        # Valores tarjeta 2
+        Output("ege_ad_home2", "value"),
+        Output("disp_ad_home2", "value"),
+        Output("desem_ad_home2", "value"),
+        Output("t_deten_2_home2", "value"),
+        # Labels tarjeta 1
+        Output("lbl_ch0_l1", "children"),
+        Output("lbl_ch1_l1", "children"),
+        Output("lbl_ch2_l1", "children"),
+        Output("lbl_ch3_l1", "children"),
+        # Labels tarjeta 2
+        Output("lbl_ch0_l2", "children"),
+        Output("lbl_ch1_l2", "children"),
+        Output("lbl_ch2_l2", "children"),
+        Output("lbl_ch3_l2", "children"),
+        Input("interval-ultimos-datos_home2", "n_intervals"),
+    )
+    def _update_cards(_n):
+        try:
+            raw = _fetch_grafico_data()
+            if not raw:
+                raise ValueError("Lista vacía")
+
+            # último registro por fecha
+            last = max(raw, key=lambda d: d.get("fecha", 0))
+
+            def fmt(v):
+                return "---" if v is None else f"{v:.1f}"
+
+            # valores (mismo orden en ambas tarjetas)
+            v_ch0 = fmt(last.get("ch0"))
+            v_ch1 = fmt(last.get("ch1"))
+            v_ch2 = fmt(last.get("ch2"))
+            v_ch3 = fmt(last.get("ch3"))
+
+            # nombres legibles
+            n_ch0 = CANAL_NOMBRES.get("ch0", "ch0")
+            n_ch1 = CANAL_NOMBRES.get("ch1", "ch1")
+            n_ch2 = CANAL_NOMBRES.get("ch2", "ch2")
+            n_ch3 = CANAL_NOMBRES.get("ch3", "ch3")
+
+            # retornamos para: [vals card1][vals card2][labels card1][labels card2]
+            return (
+                v_ch0, v_ch1, v_ch2, v_ch3,
+                v_ch0, v_ch1, v_ch2, v_ch3,
+                n_ch0, n_ch1, n_ch2, n_ch3,
+                n_ch0, n_ch1, n_ch2, n_ch3,
+            )
+        except Exception as e:
+            # fallback seguro
+            return (
+                "---", "---", "---", "---",
+                "---", "---", "---", "---",
+                CANAL_NOMBRES.get("ch0", "ch0"),
+                CANAL_NOMBRES.get("ch1", "ch1"),
+                CANAL_NOMBRES.get("ch2", "ch2"),
+                CANAL_NOMBRES.get("ch3", "ch3"),
+                CANAL_NOMBRES.get("ch0", "ch0"),
+                CANAL_NOMBRES.get("ch1", "ch1"),
+                CANAL_NOMBRES.get("ch2", "ch2"),
+                CANAL_NOMBRES.get("ch3", "ch3"),
+            )
